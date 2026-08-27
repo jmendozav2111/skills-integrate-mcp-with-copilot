@@ -28,6 +28,22 @@ header h1 {
   margin-bottom: 10px;
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.icon-button {
+  background: transparent;
+  border: 1px solid white;
+  font-size: 20px;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 6px 10px;
+}
+
 main {
   display: flex;
   flex-wrap: wrap;
@@ -162,6 +178,30 @@ button {
 
 button:hover {
   background-color: #3949ab;
+}
+
+dialog {
+  border: none;
+  border-radius: 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  max-width: 360px;
+  padding: 24px;
+  width: calc(100% - 40px);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+dialog h3 {
+  color: #1a237e;
+  margin-bottom: 20px;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .message {
