@@ -2,7 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
+  const signupContainer = document.getElementById("signup-container");
   const messageDiv = document.getElementById("message");
+  const loginButton = document.getElementById("login-button");
+  const loginDialog = document.getElementById("login-dialog");
+  const loginForm = document.getElementById("login-form");
+  const cancelLoginButton = document.getElementById("cancel-login");
+  let authorizationHeader = "";
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -21,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const spotsLeft =
           details.max_participants - details.participants.length;
 
-        // Create participants HTML with delete icons instead of bullet points
+        // Only teachers can remove participants.
         const participantsHTML =
           details.participants.length > 0
             ? `<div class="participants-section">
@@ -30,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span>${authorizationHeader ? `<button class="delete-btn" data-activity="${name}" data-email="${email}" aria-label="Unregister ${email}" title="Unregister student">Remove</button>` : ""}</li>`
                   )
                   .join("")}
               </ul>
@@ -49,11 +55,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         activitiesList.appendChild(activityCard);
 
-        // Add option to select dropdown
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        activitySelect.appendChild(option);
+        if (authorizationHeader) {
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = name;
+          activitySelect.appendChild(option);
+        }
       });
 
       // Add event listeners to delete buttons
@@ -80,6 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/unregister?email=${encodeURIComponent(email)}`,
         {
           method: "DELETE",
+          headers: { Authorization: authorizationHeader },
         }
       );
 
@@ -124,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         )}/signup?email=${encodeURIComponent(email)}`,
         {
           method: "POST",
+          headers: { Authorization: authorizationHeader },
         }
       );
 
@@ -152,6 +161,56 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  loginButton.addEventListener("click", () => {
+    if (authorizationHeader) {
+      authorizationHeader = "";
+      signupContainer.classList.add("hidden");
+      loginButton.textContent = "\u{1F464}";
+      loginButton.setAttribute("aria-label", "Teacher login");
+      loginButton.title = "Teacher login";
+      fetchActivities();
+      return;
+    }
+    loginDialog.showModal();
+  });
+
+  cancelLoginButton.addEventListener("click", () => loginDialog.close());
+
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const credentials = btoa(`${username}:${password}`);
+
+    try {
+      const response = await fetch("/auth/login", {
+        method: "POST",
+        headers: { Authorization: `Basic ${credentials}` },
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.detail || "Unable to log in");
+      }
+
+      authorizationHeader = `Basic ${credentials}`;
+      signupContainer.classList.remove("hidden");
+      loginButton.textContent = "Log Out";
+      loginButton.setAttribute("aria-label", "Teacher logout");
+      loginButton.title = "Teacher logout";
+      loginForm.reset();
+      loginDialog.close();
+      messageDiv.textContent = result.message;
+      messageDiv.className = "success";
+      messageDiv.classList.remove("hidden");
+      fetchActivities();
+    } catch (error) {
+      messageDiv.textContent = error.message || "Unable to log in";
+      messageDiv.className = "error";
+      messageDiv.classList.remove("hidden");
     }
   });
 
